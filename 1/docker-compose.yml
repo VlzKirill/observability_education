@@ -3,6 +3,8 @@ services:
 
   mysql:
     image: mariadb
+    ports:
+      - 3306:3306
     volumes:
       - ./data/mysql:/var/lib/mysql
     environment:
@@ -65,18 +67,20 @@ services:
       - wordpress_net
 
   exporter-wordpress:
-    image: ghcr.io/aorfanos/wordpress-exporter/wordpress-exporter:v0.0.8
+    image: alexandreio/wordpress_exporter
     depends_on:
       - wordpress
       - nginx
     ports:
-      - 11011:11011
+      - 9850:9850
     restart: always
-    command:
-      - "-host"
-      - "http://192.168.0.110:8080"
-      - "-auth.basic"
-      - "false"
+    environment:
+      WORDPRESS_DB_HOST: 192.168.0.110
+      WORDPRESS_DB_PORT: 3306
+      WORDPRESS_DB_USER: user_wp
+      WORDPRESS_DB_NAME: db_wordpress
+      WORDPRESS_DB_PASSWORD: P@ssw0rd
+      WORDPRESS_TABLE_PREFIX: wp_
     networks:
       - wordpress_net
 
