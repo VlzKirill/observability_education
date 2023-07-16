@@ -1,4 +1,4 @@
-# Для развертывания и мониторинга выбрана CMS Bitrix24
+# Для развертывания и мониторинга выбрана CMS Wordpress
 # Последовательность действий:
 1. Развернул ВМ с Ubuntu 22.04
 2. Обновил кеши репозиториев и пакеты:
@@ -9,7 +9,7 @@ sudo apt-get install docker.io docker-compose
 4.Настроил докер:
 usermod -a -G docker $USER
 systemctl restart docker
-5. Создал каталоги, которые будут примонтированы к контейнерам для хранения данных:
+4. Создал каталоги, которые будут примонтированы к контейнерам для хранения данных:
 sudo mkdir -p wordpress-compose
 cd wordpress-compose/
 sudo touch docker-compose.yml
@@ -20,9 +20,9 @@ sudo mkdir -p data/
 sudo mkdir -p data/html
 sudo mkdir -p data/mysql
 sudo mkdir -p prometheus
-6. Cконфигурировал docker-compose.yaml (добавил в репозиторий)
-7. Cконфигурировал nginx
-8. Запустил docker-compose
-docker-compose up -d
-
-11. Перешел на страницу ip:8080 и произвел первоначальную настройку. Установил плагин woocommerce, активировал его  (интернет-магазин, для большего числа метрик, и экспортер заточен под него)
+5. Cконфигурировал docker-compose.yaml (добавил в репозиторий)
+6. Cконфигурировал nginx (скопировал конфиг в папку nginx)
+7. Запустил docker-compose
+sudo docker-compose up -d
+8. Перешел на страницу ip:8080 и произвел первоначальную настройку. Установил плагин woocommerce, активировал его  (интернет-магазин, для большего числа метрик, и экспортер заточен под него)
+9. Проверил наличие метрик в prometheus
