@@ -9,7 +9,7 @@ sudo apt-get install docker.io docker-compose
 4.Настроил докер:
 usermod -a -G docker $USER
 systemctl restart docker
-4. Создал каталоги, которые будут примонтированы к контейнерам для хранения данных:
+5. Создал каталоги, которые будут примонтированы к контейнерам для хранения данных:
 sudo mkdir -p wordpress-compose
 cd wordpress-compose/
 sudo touch docker-compose.yml
@@ -20,9 +20,9 @@ sudo mkdir -p data/
 sudo mkdir -p data/html
 sudo mkdir -p data/mysql
 sudo mkdir -p prometheus
-5. Cконфигурировал docker-compose.yaml (добавил в репозиторий)
-6. Cконфигурировал nginx (скопировал конфиг в папку nginx)
-7. Запустил docker-compose
+6. Cконфигурировал docker-compose.yaml (добавил в репозиторий)
+7. Cконфигурировал nginx (скопировал конфиг в папку nginx)
+8. Запустил docker-compose
 sudo docker-compose up -d
-8. Перешел на страницу ip:8080 и произвел первоначальную настройку. Установил плагин woocommerce, активировал его  (интернет-магазин, для большего числа метрик, и экспортер заточен под него)
-9. Проверил наличие метрик в prometheus
+9. Перешел на страницу ip:8080 и произвел первоначальную настройку. Установил плагин woocommerce, активировал его  (интернет-магазин, для большего числа метрик, и экспортер заточен под него)
+10. Проверил наличие метрик в prometheus
