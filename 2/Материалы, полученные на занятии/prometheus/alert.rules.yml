@@ -1,0 +1,11 @@
+groups:
+  - name: example
+    rules:
+    - alert: NodeJSAppNotReachable
+      expr: up{job="nodejs-app"} == 0
+      for: 5s
+      labels:
+        severity: critical
+      annotations:
+        summary: "NodeJS app is not reachable"
+        description: "The NodeJS app job '{{ $labels.job }}' has not been reachable for more than 5 seconds."
