@@ -116,5 +116,16 @@ services:
     networks:
       - wordpress_net
 
+  victoria_metrics:
+    image: victoriametrics/victoria-metrics
+    ports:
+      - 8428:8428
+    volumes:
+      - ./victoria_metrics_data:/victoria-metrics-data
+    command: -retentionPeriod=2w
+    restart: always
+    networks:
+      - wordpress_net
+
 networks:
   wordpress_net:
