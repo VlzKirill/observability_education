@@ -1,0 +1,11 @@
+groups:
+  - name: lesson_alert
+    rules:
+    - alert: WordpressNotReachable
+      expr: probe_http_status_code{job="blackbox", instance="http://192.168.0.110:8080"} == 500
+      for: 5s
+      labels:
+        severity: critical
+      annotations:
+        summary: "Wordpress app is not reachable, status code 500"
+        description: "The wordpress has not been reachable for more than 5 seconds."
