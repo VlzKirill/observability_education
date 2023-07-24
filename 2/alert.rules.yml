@@ -1,5 +1,5 @@
 groups:
-  - name: lesson_alert
+  - name: critical_alerts
     rules:
     - alert: WordpressNotReachable
       expr: probe_http_status_code{job="blackbox", instance="http://192.168.0.110:8080"} == 500
@@ -9,3 +9,14 @@ groups:
       annotations:
         summary: "Wordpress app is not reachable, status code 500"
         description: "The wordpress has not been reachable for more than 5 seconds."
+
+  - name: warning_alerts
+    rules:
+    - alert: NginxJobNotReachable
+      expr: up{job="nginx"} == 0
+      for: 5s
+      labels:
+        severity: warning
+      annotations:
+        summary: "Nginx is not reachable"
+        description: "The nginx job '{{ $labels.job }}' has not been reachable for more than 5 seconds."
