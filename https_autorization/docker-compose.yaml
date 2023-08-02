@@ -1,0 +1,127 @@
+---
+version: "3.5"
+
+networks:
+  mon:
+
+services:
+  nginx:
+    image: nginx:1.25.1
+    restart: always
+    depends_on:
+      - grafana
+    networks:
+      - mon
+    ports:
+      - "443:443"
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/certs:/etc/nginx/certs:ro
+    environment:
+      TZ: "Europe/Moscow"
+
+  grafana:
+    image: grafana/grafana:10.0.3
+    restart: always
+    depends_on:
+      - prometheus
+    networks:
+      - mon
+    expose:
+      - "3000"
+    environment:
+      TZ: "Europe/Moscow"
+    volumes:
+      - ./grafana:/var/lib/grafana
+      - ./grafana/provisioning/:/etc/grafana/provisioning/
+## 1860 и 7587 dashboards
+
+  prometheus:
+    image: prom/prometheus:v2.46.0
+    ports:
+      - '9090:9090'
+    volumes:
+      - ./prometheus:/etc/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    restart: always
+    networks:
+      - mon
+    environment:
+      TZ: "Europe/Moscow"
+
+  alertmanager:
+    image: prom/alertmanager:v0.25.0
+    container_name: alertmanager
+    command:
+      - '--config.file=/etc/alertmanager/config.yml'
+    volumes:
+      - ./alertmanager.yml:/etc/alertmanager/config.yml
+    expose:
+      - '9093'
+    networks:
+      - mon
+    environment:
+      TZ: "Europe/Moscow"
+
+  victoria_metrics:
+    image: victoriametrics/victoria-metrics:heads-public-single-node-0-g152ca00fb
+    expose:
+      - '8428'
+    volumes:
+      - ./victoria_metrics_data:/victoria-metrics-data
+    command: -retentionPeriod=4w
+    restart: always
+    networks:
+      - mon
+    environment:
+      TZ: "Europe/Moscow"
+
+  blackbox_exporter:
+    image: prom/blackbox-exporter:v0.24.0
+    expose:
+      - '9115'
+    restart: always
+    networks:
+      - mon
+    environment:
+      TZ: "Europe/Moscow"
+
+  node_exporter:
+    image: quay.io/prometheus/node-exporter:v1.6.1
+    container_name: node_exporter
+    command:
+      - '--path.rootfs=/host'
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--collector.disable-defaults'
+      - '--collector.filesystem'
+      - '--collector.systemd'
+      - '--collector.systemd.unit-include=docker.service'
+    pid: host
+    restart: unless-stopped
+    volumes:
+      - '/:/host:ro,rslave'
+      - '/var/run/dbus/system_bus_socket:/var/run/dbus/system_bus_socket'
+    security_opt:
+      - "apparmor:unconfined"
+    expose:
+      - '9100'
+    networks:
+      - mon
+    environment:
+      TZ: "Europe/Moscow"
+
+  smtp:
+    image: catatnight/postfix:latest
+    restart: unless-stopped
+    container_name: smtp
+    networks:
+      - mon
+    environment:
+      - smtp_user=postman:postman
+      - maildomain=mail.server.ru
+      - TZ=Europe/Moscow
+    expose:
+      - "25"

@@ -1,0 +1,38 @@
+global:
+  resolve_timeout: 5m
+
+route:
+  group_by: ['alertname', 'severity']
+  repeat_interval: 1d
+  receiver: 'telegram'
+
+  routes:
+    - receiver: 'telegram'
+      group_wait: 10s
+      match_re:
+        severity: critical|warning|info|default
+      continue: true
+    - receiver: 'email'
+      group_wait: 10s
+      match_re:
+        severity: critical|warning
+      continue: true
+
+receivers:
+  - name: 'telegram'
+    telegram_configs:
+      - chat_id: 'ID' # тут нужно указать chat ID
+        parse_mode: 'HTML'
+        bot_token: 'TOKEN' # тут нужно указать API token
+
+  - name: 'email'
+    email_configs:
+      - to: 'example@mail.ru' # тут указать кому
+        from: 'no-reply@server.ru'
+        smarthost: 'smtp:25'
+        auth_username: 'postman'
+        auth_identity: 'postman'
+        auth_password: 'postman'
+        require_tls: true
+        tls_config:
+          insecure_skip_verify: true
