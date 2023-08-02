@@ -1,0 +1,55 @@
+groups:
+  - name: webapp.rules
+    rules:
+    - alert: HTTP_Server_Error_5XX
+      expr: probe_http_status_code{job="blackbox"} >= 500
+      for: 30s
+      labels:
+        severity: critical
+      annotations:
+        summary: "Ошибка 500 HTTP сервера {{ $labels.instance }}"
+        description: "Ошибка HTTP сервера {{ $labels.instance }}. Ошибка {{ $value }}"
+
+    - alert: TLS_Sertificate_Expires_30d
+      expr: probe_ssl_earliest_cert_expiry{job="blackbox"} - time() <= 2592000
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "TLS сертификат истекает на {{ $labels.instance }}"
+        description: "TLS сертификат истекает на  {{ $labels.instance }} Осталось меньше месяца! Секунд до истечения:  {{ $value }}"
+
+    - alert: TLS_Sertificate_Expires_7d
+      expr: probe_ssl_earliest_cert_expiry{job="blackbox"} - time() <= 604800
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: "TLS сертификат истекает на {{ $labels.instance }}"
+        description: "TLS сертификат истекает на {{ $labels.instance }}. Осталось меньше недели! Секунд до истечения: {{ $value }}"
+
+  - name: node.rules
+    rules:
+    - alert: Disk_Space_Low
+      expr: 100 * ( node_filesystem_avail_bytes{mountpoint="/"} ) / node_filesystem_size_bytes{mountpoint="/"} < 10
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Мало места на диске ({{ $labels.job }})"
+        description: "Осталось {{ $value }}% на диске, примонтированном в {{ $labels.mountpoint }} (корень) на сервере {{ $labels.job }}."
+
+    - alert: Service_State_Inactive
+      expr: node_systemd_unit_state{state="inactive"} == 1
+      for: 30s
+      labels:
+        severity: critical
+      annotations:
+        summary: "На сервере {{ $labels.job }} не работает сервис {{ $labels.name }}"
+        description: "На сервере {{ $labels.job }} не работает сервис {{ $labels.name }}. Состояние сервиса: inactive"
+
+
+# Alert for any instance that is unreachable for >1 minutes.
+#  - alert: InstanceDown
+##    expr: up == 0
+#    for: 1m
