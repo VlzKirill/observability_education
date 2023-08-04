@@ -5,4 +5,6 @@
 5. Снова нажал кнопку New. Выбрал Import. Ввел ID dashboard node-exporter (1860). Нажал Load. В поле signcl-prometheus выбрал prometheus data source. Нажал Import.
 6. Открылся dashboard. Нажал шестеренку, открылись настройки dashboard. Изменил Folder на Infra. Сохранил.
 7. Повторил п. 5 и 6, только для ID 7587 и папки App. Так же активировал пункт Refresh live dashboards.
-8. 
+8. Добавил так же dashboard wordpress
+9. Алерты: Нажал Home - Alerting, Настроил Contact point (telegram). В Notification policies указал telegram как дефолтный.
+10. Настроил Alert rule (up == 0). Получил алерт в телеграм.

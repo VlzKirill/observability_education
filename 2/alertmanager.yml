@@ -23,18 +23,18 @@ route:
 receivers:
   - name: 'critical'
     telegram_configs:
-      - chat_id: 2130189693
+      - chat_id: ID
         parse_mode: 'HTML'
-        bot_token: '5805976749:AAEvztRdbyAzW55vwQpd7AhiziqKto6OMmk'
+        bot_token: 'TOKEN'
 
   - name: 'warning'
     telegram_configs:
-      - chat_id: 2130189693
+      - chat_id: ID
         parse_mode: 'HTML'
-        bot_token: '5805976749:AAEvztRdbyAzW55vwQpd7AhiziqKto6OMmk'
+        bot_token: 'TOKEN'
 
   - name: 'default'
     telegram_configs:
-      - chat_id: 2130189693
+      - chat_id: ID
         parse_mode: 'HTML'
-        bot_token: '5805976749:AAEvztRdbyAzW55vwQpd7AhiziqKto6OMmk'
+        bot_token: 'TOKEN'
