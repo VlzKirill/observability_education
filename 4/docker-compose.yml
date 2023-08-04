@@ -1,0 +1,146 @@
+version: '3'
+services:
+
+  mysql:
+    image: mariadb
+    ports:
+      - 3306:3306
+    volumes:
+      - ./data/mysql:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: P@ssw0rd
+      MYSQL_DATABASE: db_wordpress
+      MYSQL_USER: user_wp
+      MYSQL_PASSWORD: P@ssw0rd
+    restart: always
+    networks:
+      - wordpress_net
+
+  wordpress:
+    image: wordpress:php7.4-fpm-alpine
+    volumes:
+      - ./data/html:/var/www/html
+    depends_on:
+      - mysql
+    environment:
+      WORDPRESS_DB_HOST: mysql
+      MYSQL_ROOT_PASSWORD: P@ssw0rd
+      WORDPRESS_DB_NAME: db_wordpress
+      WORDPRESS_DB_USER: user_wp
+      WORDPRESS_DB_PASSWORD: P@ssw0rd
+      WORDPRESS_TABLE_PREFIX: wp_
+    links:
+      - mysql
+    restart: always
+    networks:
+      - wordpress_net
+
+  nginx:
+    image: nginx:latest
+    volumes:
+      - ./nginx:/etc/nginx/conf.d
+      - ./data/html:/var/www/html
+    ports:
+      - 8080:80
+    links:
+      - wordpress
+    networks:
+      - wordpress_net
+
+  exporter-wordpress:
+    image: ghcr.io/aorfanos/wordpress-exporter/wordpress-exporter:v0.0.8
+    container_name: exporter-wordpress
+    ports:
+      - "11011:11011"
+    command:
+      - "-host"
+      - "http://192.168.0.110:8080"
+      - "-auth.basic"
+      - "false"
+    depends_on:
+      - wordpress
+    networks:
+      - wordpress_net
+
+  blackbox-exporter:
+    image: prom/blackbox-exporter
+    ports:
+      - 9115:9115
+    restart: always
+    networks:
+      - wordpress_net
+
+  prometheus:
+    image: prom/prometheus
+    ports:
+      - 9090:9090
+    volumes:
+      - ./prometheus:/etc/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    restart: always
+    networks:
+      - wordpress_net
+
+  alertmanager:
+    image: prom/alertmanager:v0.25.0
+    container_name: alertmanager
+    command:
+      - '--config.file=/etc/alertmanager/config.yml'
+    volumes:
+      - ./alertmanager.yml:/etc/alertmanager/config.yml
+    ports:
+      - '9093:9093'
+    networks:
+      - wordpress_net
+
+  victoria_metrics:
+    image: victoriametrics/victoria-metrics
+    ports:
+      - 8428:8428
+    volumes:
+      - ./victoria_metrics_data:/victoria-metrics-data
+    command: -retentionPeriod=2w
+    restart: always
+    networks:
+      - wordpress_net
+
+  node_exporter:
+    image: quay.io/prometheus/node-exporter:v1.6.1
+    container_name: node_exporter
+    command:
+      - '--path.rootfs=/host'
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+    pid: host
+    restart: unless-stopped
+    volumes:
+      - '/:/host:ro,rslave'
+      - '/var/run/dbus/system_bus_socket:/var/run/dbus/system_bus_socket'
+    security_opt:
+      - "apparmor:unconfined"
+    expose:
+      - '9100'
+    networks:
+      - wordpress_net
+    environment:
+      TZ: "Europe/Moscow"
+
+  grafana:
+    image: grafana/grafana:10.0.3
+    restart: always
+    depends_on:
+      - prometheus
+    networks:
+      - wordpress_net
+    ports:
+      - "3000:3000"
+    environment:
+      TZ: "Europe/Moscow"
+    volumes:
+      - ./grafana:/var/lib/grafana
+      - ./grafana/provisioning/:/etc/grafana/provisioning/
+## 1860 и 7587 dashboards
+
+networks:
+  wordpress_net:
