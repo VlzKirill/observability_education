@@ -1,0 +1,36 @@
+config:
+  modules:
+    tcp_connect:
+      prober: tcp
+      timeout: 5s
+    http_2xx:
+      prober: http
+      timeout: 20s
+      http:
+        valid_http_versions: [ "HTTP/1.1", "HTTP/2.0" ]
+        no_follow_redirects: false
+        preferred_ip_protocol: "ip4"
+
+extraArgs:
+  - --log.level=debug
+
+serviceMonitor:
+  enabled: true
+  targets:
+      - name: clamav
+        url: clamav.thirdparty:3310
+        labels:
+          app: blackbox
+          release: anzu
+        interval: 15s
+        scrapeTimeout: 15s
+        module: tcp_connect
+        additionalMetricsRelabels: {}
+
+nodeSelector:
+  agentpool: united
+tolerations:
+  - key: "role"
+    operator: "Equal"
+    value: "united"
+    effect: "NoSchedule"

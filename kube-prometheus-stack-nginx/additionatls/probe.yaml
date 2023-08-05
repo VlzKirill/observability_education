@@ -1,0 +1,23 @@
+apiVersion: monitoring.coreos.com/v1
+kind: Probe
+metadata:
+  labels:
+    app.kubernetes.io/component: exporter
+    app.kubernetes.io/name: blackbox-exporter
+    app.kubernetes.io/part-of: kube-prometheus
+    release: anzu
+  name: certificates
+  namespace: monitoring
+spec:
+  module: http_2xx
+  prober:
+    url: prometheus-blackbox-exporter:9115
+  targets:
+    staticConfig:
+      labels:
+        environment: non-k8s-endpoints
+      static:
+        - https://cdn-content-azure.domain.com
+        - https://assets.domain.com
+        - https://logic.domain.com
+        - https://www.domain.io

@@ -1,0 +1,42 @@
+
+# Установить мониторинг
+
+
+kubectl create namespace monitoring
+helm install otus --namespace monitoring \
+  --values ./helm/prometheus-stack.yaml \
+  prometheus-community/kube-prometheus-stack
+
+# Попасть в графану и прометей
+
+kubectl --namespace monitoring port-forward service/otus-grafana 3000:80
+kubectl --namespace monitoring port-forward service/otus-kube-prometheus-stack-prometheus 9091:9090
+  
+# Установить Nginx
+  
+kubectl create namespace ingress-nginx
+helm install gateway --namespace ingress-nginx \
+  --values ./helm/nginx-config.yaml \
+  ingress-nginx/ingress-nginx 
+  
+# --version ${ingress_nginx_version} !
+
+# Нагрузочный тест
+
+k6 run --vus 10 --duration 360s script.js
+
+# Домашка
+
+Посчитать 99й персентиль по времени ответа за 5 минут.
+histogram_quantile(.99, sum(rate(nginx_ingress_controller_request_duration_seconds_bucket[5m])) by (le))
+
+Посчитать количество запросов по каждому коду ответа за 5 минут.
+
+В секунду 
+sum by (status) (
+  rate(nginx_ingress_controller_requests[5m])
+)
+
+Абсолютное
+increase(nginx_ingress_controller_requests[5m])
+

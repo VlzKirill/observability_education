@@ -1,0 +1,19 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: my-metrics
+  labels:
+    app: my
+    release: otus
+  namespace: monitoring
+spec:
+  selector:
+    matchExpressions:
+      - key: "app"
+        operator: In
+        values: ["my"]
+  namespaceSelector:
+    matchNames:
+      - ?????
+  endpoints:
+    - port: ????

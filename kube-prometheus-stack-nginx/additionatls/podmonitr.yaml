@@ -1,0 +1,18 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: media-transform-metrics
+  labels:
+    app: media-transform
+    release: anzu
+  namespace: monitoring
+spec:
+  selector:
+    matchLabels:
+      app: media-transform
+  namespaceSelector:
+    matchNames:
+      - staging
+  podMetricsEndpoints:
+    - path: /metrics
+      port: metrics
