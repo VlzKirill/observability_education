@@ -71,11 +71,14 @@ services:
     depends_on:
       - wordpress
       - nginx
+      - mysql
     ports:
       - 9850:9850
+    links:
+      - mysql
     restart: always
     environment:
-      WORDPRESS_DB_HOST: 192.168.0.110
+      WORDPRESS_DB_HOST: mysql
       WORDPRESS_DB_PORT: 3306
       WORDPRESS_DB_USER: user_wp
       WORDPRESS_DB_NAME: db_wordpress
