@@ -1,8 +1,20 @@
 #!/bin/bash
 
-metrics=("metric1" "metric2" "metric3")
+metric1=$((RANDOM%100))
+metric2=$((RANDOM%100))
+metric3=$((RANDOM%100))
 
-for metric in "${metrics[@]}"; do
-    value=$((RANDOM % 101))
-    echo "otus_important_metrics[$metric] $value"
-done
+case "$1" in
+  metric1)
+    echo $metric1
+    ;;
+  metric2)
+    echo $metric2
+    ;;
+  metric3)
+    echo $metric3
+    ;;
+  *)
+    echo "[{\"{#METRIC}\":\"metric1\"},{\"{#METRIC}\":\"metric2\"},{\"{#METRIC}\":\"metric3\"}]"
+    ;;
+esac
