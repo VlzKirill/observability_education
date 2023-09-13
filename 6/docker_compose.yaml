@@ -1,0 +1,126 @@
+version: '2.2'
+services:
+  setup:
+    image: elasticsearch:8.9.2
+    volumes:
+      - certs:/usr/share/elasticsearch/config/certs
+    user: "0"
+    command: >
+      bash -c '
+        if [ ! -f config/certs/ca.zip ]; then
+          echo "Creating CA";
+          bin/elasticsearch-certutil ca --silent --pem -out config/certs/ca.zip;
+          unzip config/certs/ca.zip -d config/certs;
+        fi;
+        if [ ! -f config/certs/certs.zip ]; then
+          echo "Creating certs";
+          echo -ne \
+          "instances:\n"\
+          "  - name: es-hot\n"\
+          "    dns:\n"\
+          "      - es-hot\n"\
+          "      - localhost\n"\
+          "    ip:\n"\
+          "      - 127.0.0.1\n"\
+          > config/certs/instances.yml;
+          bin/elasticsearch-certutil cert --silent --pem -out config/certs/certs.zip --in config/certs/instances.yml --ca-cert config/certs/ca/ca.crt --ca-key config/certs/ca/ca.key;
+          unzip config/certs/certs.zip -d config/certs;
+        fi;
+        echo "Setting file permissions"
+        chown -R root:root config/certs;
+        find . -type d -exec chmod 750 \{\} \;;
+        find . -type f -exec chmod 640 \{\} \;;
+        echo "Waiting for Elasticsearch availability";
+        until curl -s --cacert config/certs/ca/ca.crt https://es-hot:9200 | grep -q "missing authentication credentials"; do sleep 30; done;
+        echo "Setting kibana_system password";
+        until curl -s -X POST --cacert config/certs/ca/ca.crt -u "elastic:pass12345" -H "Content-Type: application/json" https://es-hot:9200/_security/user/kibana_system/_password -d "{\"password\":\"kibana12345\"}" | grep -q "^{}"; do sleep 10; done;
+        echo "All done!";
+      '
+    healthcheck:
+      test: ["CMD-SHELL", "[ -f config/certs/es-hot/es-hot.crt ]"]
+      interval: 1s
+      timeout: 5s
+      retries: 120
+
+  es-hot:
+    image: elasticsearch:8.9.2
+    container_name: es-hot
+    environment:
+      - node.name=es-hot
+      - cluster.name=es-docker-cluster
+      - discovery.seed_hosts=es-warm
+      - cluster.initial_master_nodes=es-hot
+      - bootstrap.memory_lock=true
+      - ELASTIC_PASSWORD=pass12345
+      - KIBANA_PASSWORD=kibana12345
+      - xpack.security.enabled=true
+      - xpack.security.http.ssl.enabled=true
+      - xpack.security.http.ssl.key=certs/es-hot/es-hot.key
+      - xpack.security.http.ssl.certificate=certs/es-hot/es-hot.crt
+      - xpack.security.http.ssl.certificate_authorities=certs/ca/ca.crt
+      - xpack.security.transport.ssl.enabled=true
+      - xpack.security.transport.ssl.key=certs/es-hot/es-hot.key
+      - xpack.security.transport.ssl.certificate=certs/es-hot/es-hot.crt
+      - xpack.security.transport.ssl.certificate_authorities=certs/ca/ca.crt
+      - xpack.security.transport.ssl.verification_mode=certificate
+      - "ES_JAVA_OPTS=-Xms768m -Xmx768m"
+    volumes:
+      - data01:/usr/share/elasticsearch/data
+      - certs:/usr/share/elasticsearch/config/certs
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    ports:
+      - 9200:9200
+    networks:
+      - elastic
+    depends_on:
+      setup:
+        condition: service_healthy
+
+  kibana:
+    image: kibana:8.9.2
+    container_name: kibana
+    ports:
+      - 5601:5601
+    environment:
+      ELASTICSEARCH_URL: https://es-hot:9200
+      ELASTICSEARCH_HOSTS: '["https://es-hot:9200"]'
+      ELASTICSEARCH_USERNAME: kibana_system
+      ELASTICSEARCH_PASSWORD: kibana12345
+      ELASTICSEARCH_SSL_CERTIFICATEAUTHORITIES: config/certs/ca/ca.crt
+    networks:
+      - elastic
+    volumes:
+      - certs:/usr/share/kibana/config/certs
+    depends_on:
+      - es-hot
+
+  logstash:
+    image: "logstash:8.9.2"
+    container_name: logstash
+    user: "0"
+    ports:
+      - 5046:5046
+    volumes:
+      - ./logstash.conf:/usr/share/logstash/pipeline/logstash.conf
+      - ./logstash.yml:/usr/share/logstash/config/logstash.yml
+      - /var/log:/logs:ro
+    networks:
+      - elastic
+    depends_on:
+      - es-hot
+
+volumes:
+  data01:
+    driver: local
+  certs:
+    driver: local
+
+networks:
+  elastic:
+    driver: bridge
