@@ -96,3 +96,11 @@ sudo systemctl restart rsyslog.service
 
 Проверка появились ли индексы:
 4. curl -k --user elastic:'go-+4cnY6cMPopiDx5YA' https://192.168.0.108:9200/_cat/indices?v
+
+Визуализация в kibana:
+1. ЗАшел в kibana, перешел в Management - Stack-Management.
+2. Data - Index Management. Выбрал созданный ранее индекс (ssh-new)
+3. Нажал Manage - Add Lifecycle policy, создал polisy, по шаблону logs.
+
+Перешел в главное меню - Analytics - Discover. СОздал запрос на просмотр и анализ логов.
+Перешел в визуализацию, создал визуализацию lens, вывел на dashboard.
