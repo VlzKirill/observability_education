@@ -100,7 +100,7 @@ sudo systemctl restart rsyslog.service
 Визуализация в kibana:
 1. ЗАшел в kibana, перешел в Management - Stack-Management.
 2. Data - Index Management. Выбрал созданный ранее индекс (ssh-new)
-3. Нажал Manage - Add Lifecycle policy, создал polisy, по шаблону logs.
+3. Нажал Manage - Add Lifecycle policy, создал policy, по шаблону logs.
 
-Перешел в главное меню - Analytics - Discover. СОздал запрос на просмотр и анализ логов.
+Перешел в главное меню - Analytics - Discover. Создал запрос на просмотр и анализ логов.
 Перешел в визуализацию, создал визуализацию lens, вывел на dashboard.
