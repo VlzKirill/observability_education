@@ -46,6 +46,12 @@ include = ["/var/log/*.log"]
 #enabled = true
 #address = "127.0.0.1:8686"
 
+[transforms]
+[transforms.vector_transform]
+type = "filter"
+inputs = ["vector_logs"]
+condition = { type = "is_metric"}
+
 #Output to Elasticsearch
 [sinks]
 [sinks.elasticsearch]
@@ -60,12 +66,6 @@ bulk.index = "vector-{{ vector_logs }}-%Y-%m-%d"
 mode = "data_stream"
 #pipeline = "vector"
 api_version = "v8"
-
-[transforms]
-[transforms.vector_transform]
-type = "filter"
-inputs = ["vector_logs"]
-condition = { type = "is_log"}
 
  
 
