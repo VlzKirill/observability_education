@@ -19,7 +19,7 @@ services:
   promtail:
     image: grafana/promtail:2.9.1
     volumes:
-      - /var/log:/var/log
+      - /var/log:/host_log:ro
       - ./promtail.yml:/etc/promtail/config.yml
     command: -config.file=/etc/promtail/config.yml
     expose:

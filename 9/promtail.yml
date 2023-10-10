@@ -18,4 +18,4 @@ scrape_configs:
      labels:
       job: varlogs
       host: otus_host
-      __path__: /var/log/*.log
+      __path__: /host_log/*.log
