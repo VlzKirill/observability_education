@@ -37,7 +37,7 @@ services:
     container_name: mysql
     volumes:
       - ./mysql_data:/var/lib/mysql
-#      - ./init:/docker-entrypoint-initdb.d
+      - ./init:/docker-entrypoint-initdb.d
     environment:
       MYSQL_ROOT_PASSWORD: P@ssw0rd
       MYSQL_DATABASE: db_wordpress
@@ -55,7 +55,7 @@ services:
     volumes:
       - ./wordpress_data:/var/www/html
     environment:
-      WORDPRESS_DB_HOST: mysqld
+      WORDPRESS_DB_HOST: mysql
       MYSQL_ROOT_PASSWORD: P@ssw0rd
       WORDPRESS_DB_NAME: db_wordpress
       WORDPRESS_DB_USER: user_wp
@@ -114,31 +114,15 @@ services:
       - observability
     restart: always
 
-## docker-compose exec mysql mariadb -u root -p
-## CREATE USER 'exporter'@'%' IDENTIFIED BY 'exporter' WITH MAX_USER_CONNECTIONS 5;
-## GRANT SLAVE MONITOR, PROCESS, REPLICATION CLIENT, SELECT ON *.* TO 'exporter'@'%';
-## GRANT SELECT ON performance_schema.* TO 'exporter'@'%';
-## FLUSH PRIVILEGES;
-## EXIT;
-  mysql-exporter:
-    image: quay.io/prometheus/mysqld-exporter:v0.15.0
-    container_name: mysql-exporter
-    environment:
-#      - DATA_SOURCE_NAME='exporter:exporter@(mysql:3306)/'
-      - MYSQLD_EXPORTER_PASSWORD="P@ssw0rd"
+  mysqld-exporter:
+    image: prom/mysqld-exporter:v0.15.0
+    container_name: mysqld-exporter
     command:
-#      - --config.my-cnf=/etc/.my.cnf
-      - --mysqld.username=user_wp
-      - --mysqld.address=mysql:3306
-      - --no-collect.info_schema.innodb_cmp
-      - --no-collect.info_schema.innodb_cmpmem
       - --collect.global_status
-      - --no-collect.info_schema.innodb_metrics
-      - --collect.auto_increment.columns
-      - --collect.info_schema.processlist
-      - --collect.binlog_size
-      - --collect.info_schema.tablestats
       - --collect.global_variables
+      - --collect.info_schema.processlist
+      - --collect.info_schema.innodb_metrics
+      - --collect.info_schema.tablestats
       - --collect.info_schema.query_response_time
       - --collect.info_schema.userstats
       - --collect.info_schema.tables
@@ -147,13 +131,32 @@ services:
       - --collect.perf_schema.eventswaits
       - --collect.perf_schema.indexiowaits
       - --collect.perf_schema.tableiowaits
-      - --collect.slave_status
       - --web.listen-address=0.0.0.0:9104
-#    volumes:
-#      - ./my.cnf:/etc/.my.cnf:ro
+      - --web.telemetry-path=/metrics
+      - --config.my-cnf=/etc/.my.cnf
     expose:
       - 9104
+    volumes:
+      - ./my.cnf:/etc/.my.cnf
     depends_on:
+      - mysql
+    networks:
+      - observability
+    restart: always
+
+  wordpress-exporter:
+    image: ghcr.io/aorfanos/wordpress-exporter/wordpress-exporter:v0.0.8
+    container_name: wordpress-exporter
+    expose:
+      - 11011
+    command:
+      - "-host"
+      - "http://nginx"
+      - "-auth.basic"
+      - "false"
+    depends_on:
+      - wordpress
+      - nginx
       - mysql
     networks:
       - observability
@@ -167,6 +170,7 @@ services:
     restart: always
     networks:
       - observability
+    restart: always
 
   node-exporter:
     image: quay.io/prometheus/node-exporter:v1.6.1
@@ -186,6 +190,7 @@ services:
       - 9100
     networks:
       - observability
+    restart: always
 
   prometheus:
     image: prom/prometheus:v2.46.0
@@ -216,6 +221,9 @@ services:
   grafana:
     image: grafana/grafana:10.0.3
     container_name: grafana
+    volumes:
+      - ./grafana:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning/
     ports:
       - 3000:3000
     depends_on:
@@ -223,8 +231,6 @@ services:
       - prometheus
     networks:
       - observability
-    volumes:
-      - ./grafana:/var/lib/grafana
-      - ./grafana/provisioning:/etc/grafana/provisioning/
+    restart: always
 
 
