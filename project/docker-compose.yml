@@ -1,0 +1,230 @@
+version: "3"
+
+networks:
+  observability:
+
+## Предварительно создать папки: nginx/logs, wordpress_data, mysql_data, prometheus, grafana/provisioning init
+## Файлы: nginx/nginx.conf promtail.conf prometheus/prometheus.yml alertmanager.yml init/exporter.sql
+## Dashboards: 1860 - node, 14928 - blackbox, 9512 - nginx, 12559 - nginx_loki, 1177 или 14057 - mysql, 13191 - WP
+## Плагины WP: WP statistics
+
+services:
+  smtp:
+    image: catatnight/postfix:latest
+    container_name: smtp
+    environment:
+      - smtp_user=postman:postman
+      - maildomain=no-reply.otus.ru
+      - TZ=Europe/Moscow
+    expose:
+      - 25
+    networks:
+      - observability
+    restart: always
+            
+  loki:
+    image: grafana/loki:2.9.1
+    container_name: loki
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - observability
+    expose:
+      - 3100
+    restart: always
+
+  mysql:
+    image: mysql:8.1.0
+    container_name: mysql
+    volumes:
+      - ./mysql_data:/var/lib/mysql
+#      - ./init:/docker-entrypoint-initdb.d
+    environment:
+      MYSQL_ROOT_PASSWORD: P@ssw0rd
+      MYSQL_DATABASE: db_wordpress
+      MYSQL_USER: user_wp
+      MYSQL_PASSWORD: P@ssw0rd
+    expose:
+      - 3306
+    networks:
+      - observability
+    restart: always
+
+  wordpress:
+    image: wordpress:php8.2-fpm
+    container_name: wordpress
+    volumes:
+      - ./wordpress_data:/var/www/html
+    environment:
+      WORDPRESS_DB_HOST: mysqld
+      MYSQL_ROOT_PASSWORD: P@ssw0rd
+      WORDPRESS_DB_NAME: db_wordpress
+      WORDPRESS_DB_USER: user_wp
+      WORDPRESS_DB_PASSWORD: P@ssw0rd
+      WORDPRESS_TABLE_PREFIX: wp_
+    depends_on:
+      - mysql
+    expose:
+      - 9000
+    networks:
+      - observability
+    restart: always
+
+  nginx:
+    image: nginx:1.25.2
+    container_name: nginx
+    volumes:
+      - ./nginx:/etc/nginx/conf.d
+      - ./wordpress_data:/var/www/html
+      - ./nginx/logs:/var/log/nginx
+    depends_on:
+      - wordpress
+    ports:
+      - 80:80
+    networks:
+      - observability
+    restart: always
+      
+  promtail:
+    image: grafana/promtail:2.9.1
+    container_name: promtail
+    volumes:
+      - ./nginx/logs:/nginx_logs:ro
+      - ./promtail.yml:/etc/promtail/config.yml
+    command: -config.file=/etc/promtail/config.yml
+    depends_on:
+      - loki
+      - nginx
+    networks:
+      - observability
+    restart: always
+
+  nginx-exporter:
+    image: nginx/nginx-prometheus-exporter:0.11.0
+    container_name: nginx-exporter
+    command:
+      - -nginx.scrape-uri
+      - http://nginx:80/nginx_status
+      - -web.telemetry-path=/metrics
+      - -nginx.retries=10
+    expose:
+      - 9113
+    depends_on:
+      - nginx
+    networks:
+      - observability
+    restart: always
+
+## docker-compose exec mysql mariadb -u root -p
+## CREATE USER 'exporter'@'%' IDENTIFIED BY 'exporter' WITH MAX_USER_CONNECTIONS 5;
+## GRANT SLAVE MONITOR, PROCESS, REPLICATION CLIENT, SELECT ON *.* TO 'exporter'@'%';
+## GRANT SELECT ON performance_schema.* TO 'exporter'@'%';
+## FLUSH PRIVILEGES;
+## EXIT;
+  mysql-exporter:
+    image: quay.io/prometheus/mysqld-exporter:v0.15.0
+    container_name: mysql-exporter
+    environment:
+#      - DATA_SOURCE_NAME='exporter:exporter@(mysql:3306)/'
+      - MYSQLD_EXPORTER_PASSWORD="P@ssw0rd"
+    command:
+#      - --config.my-cnf=/etc/.my.cnf
+      - --mysqld.username=user_wp
+      - --mysqld.address=mysql:3306
+      - --no-collect.info_schema.innodb_cmp
+      - --no-collect.info_schema.innodb_cmpmem
+      - --collect.global_status
+      - --no-collect.info_schema.innodb_metrics
+      - --collect.auto_increment.columns
+      - --collect.info_schema.processlist
+      - --collect.binlog_size
+      - --collect.info_schema.tablestats
+      - --collect.global_variables
+      - --collect.info_schema.query_response_time
+      - --collect.info_schema.userstats
+      - --collect.info_schema.tables
+      - --collect.perf_schema.tablelocks
+      - --collect.perf_schema.file_events
+      - --collect.perf_schema.eventswaits
+      - --collect.perf_schema.indexiowaits
+      - --collect.perf_schema.tableiowaits
+      - --collect.slave_status
+      - --web.listen-address=0.0.0.0:9104
+#    volumes:
+#      - ./my.cnf:/etc/.my.cnf:ro
+    expose:
+      - 9104
+    depends_on:
+      - mysql
+    networks:
+      - observability
+    restart: always
+
+  blackbox-exporter:
+    image: prom/blackbox-exporter:v0.24.0
+    container_name: blackbox-exporter
+    expose:
+      - 9115
+    restart: always
+    networks:
+      - observability
+
+  node-exporter:
+    image: quay.io/prometheus/node-exporter:v1.6.1
+    container_name: node-exporter
+    command:
+      - '--path.rootfs=/host'
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+    pid: host
+    restart: always
+    volumes:
+      - '/proc:/host/proc:ro'
+      - '/sys:/host/sys:ro'
+      - '/dev:/host/dev:ro'
+      - '/var/run/dbus/system_bus_socket:/var/run/dbus/system_bus_socket'
+    expose:
+      - 9100
+    networks:
+      - observability
+
+  prometheus:
+    image: prom/prometheus:v2.46.0
+    container_name: prometheus
+    ports:
+      - 9090:9090
+    volumes:
+      - ./prometheus:/etc/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    networks:
+      - observability
+    restart: always
+
+  alertmanager:
+    image: prom/alertmanager:v0.25.0
+    container_name: alertmanager
+    command:
+      - '--config.file=/etc/alertmanager/config.yml'
+    volumes:
+      - ./alertmanager.yml:/etc/alertmanager/config.yml
+    expose:
+      - 9093
+    networks:
+      - observability
+    restart: always
+
+  grafana:
+    image: grafana/grafana:10.0.3
+    container_name: grafana
+    ports:
+      - 3000:3000
+    depends_on:
+      - loki
+      - prometheus
+    networks:
+      - observability
+    volumes:
+      - ./grafana:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning/
+
+
