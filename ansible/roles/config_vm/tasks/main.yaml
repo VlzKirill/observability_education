@@ -1,0 +1,3 @@
+---
+- name: Network and time settings
+  import_tasks: network.yaml

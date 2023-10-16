@@ -1,0 +1,5 @@
+---
+- hosts: localhost
+  roles:
+    - config_vm
+  become: true
