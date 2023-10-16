@@ -5,8 +5,6 @@ networks:
 
 ## Предварительно создать папки: nginx/logs, wordpress_data, mysql_data, prometheus, grafana/provisioning init
 ## Файлы: nginx/nginx.conf promtail.conf prometheus/prometheus.yml alertmanager.yml init/exporter.sql
-## Dashboards: 1860 - node, 14928 - blackbox, 9512 - nginx, 12559 - nginx_loki, 1177 или 14057 - mysql, 13191 - WP
-## Плагины WP: WP statistics
 
 services:
   smtp:
@@ -145,19 +143,20 @@ services:
     restart: always
 
   wordpress-exporter:
-    image: ghcr.io/aorfanos/wordpress-exporter/wordpress-exporter:v0.0.8
     container_name: wordpress-exporter
-    expose:
-      - 11011
-    command:
-      - "-host"
-      - "http://nginx"
-      - "-auth.basic"
-      - "false"
+    image: erwin82/wordpress_exporter:1.0.0
+    environment:
+      WORDPRESS_DB_HOST: mysql
+      WORDPRESS_DB_PORT: 3306
+      WORDPRESS_DB_USER: user_wp
+      WORDPRESS_DB_NAME: db_wordpress
+      WORDPRESS_TABLE_PREFIX: wp_
+      WORDPRESS_DB_PASSWORD: P@ssw0rd
     depends_on:
-      - wordpress
-      - nginx
       - mysql
+      - wordpress
+    expose:
+      - 8888
     networks:
       - observability
     restart: always
@@ -167,7 +166,6 @@ services:
     container_name: blackbox-exporter
     expose:
       - 9115
-    restart: always
     networks:
       - observability
     restart: always

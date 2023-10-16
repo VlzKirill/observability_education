@@ -9,13 +9,12 @@ client:
   url: http://loki:3100/api/prom/push
 
 scrape_configs:
- - job_name: system
-   pipeline_stages:
-   - docker:
-   static_configs:
-   - targets:
+- job_name: nginx
+  static_configs:
+  - targets:
       - localhost
-     labels:
-      job: nginx_logs
+    labels:
+      job: nginx
       host: nginx
+      agent: promtail
       __path__: /nginx_logs/*.log
