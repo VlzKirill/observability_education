@@ -1,0 +1,45 @@
+---
+version: "3.5"
+
+networks:
+  mon:
+
+services:
+  node_exporter:
+    image: quay.io/prometheus/node-exporter:v1.6.1
+    container_name: node_exporter
+    command:
+      - '--path.rootfs=/host'
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--collector.disable-defaults'
+      - '--collector.filesystem'
+      - '--collector.systemd'
+      - '--collector.systemd.unit-include=nginx.service'
+    pid: host
+    restart: unless-stopped
+    volumes:
+      - '/:/host:ro,rslave'
+      - '/var/run/dbus/system_bus_socket:/var/run/dbus/system_bus_socket'
+    security_opt:
+      - "apparmor:unconfined"
+    ports:
+      - '9100:9100'
+    networks:
+      - mon
+    environment:
+      TZ: "Europe/Moscow"
+
+  container-exporter:
+    image: "prom/container-exporter"
+    container_name: container_exporter
+    volumes:
+      - /sys/fs/cgroup:/cgroup
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - "9104:9104"
+    networks:
+      - mon
+    environment:
+      TZ: "Europe/Moscow"
+    restart: unless-stopped
