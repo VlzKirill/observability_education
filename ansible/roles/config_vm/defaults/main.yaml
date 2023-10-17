@@ -1,0 +1,23 @@
+---
+dir_paths:
+  - /opt/observability
+  - /opt/observability/prometheus
+  - /opt/observability/grafana
+  - /opt/observability/grafana/provisioning
+  - /opt/observability/init
+  - /opt/observability/mysql/data
+  - /opt/observability/nginx/logs
+  - /opt/observability/wordpress/data
+  - /opt/observability/victoria-metrics/data
+
+config_files:
+  - { file: prometheus.yml, location: /opt/observability/prometheus/prometheus.yml }
+  - { file: alert.rules.yml, location: /opt/observability/prometheus/alert.rules.yml }
+  - { file: alertmanager.yml, location: /opt/observability/alertmanager.yml }
+  - { file: promtail.yml, location: /opt/observability/promtail.yml }
+  - { file: my.cnf, location: /opt/observability/my.cnf }
+  - { file: docker-compose.yml, location: /opt/observability/docker-compose.yml }
+  - { file: default.conf, location: /opt/observability/nginx/default.conf }
+  - { file: exporter.sql, location: /opt/observability/init/exporter.sql }
+  - { file: grafana.db, location: /opt/observability/grafana/grafana.db }
+  - { file: grafana.ini, location: /opt/observability/grafana/grafana.ini }

@@ -72,7 +72,7 @@ services:
     container_name: nginx
     volumes:
       - ./nginx:/etc/nginx/conf.d
-      - ./wordpress_data:/var/www/html
+      - ./wordpress/data:/var/www/html
       - ./nginx/logs:/var/log/nginx
     depends_on:
       - wordpress
@@ -179,7 +179,6 @@ services:
       - '--path.procfs=/host/proc'
       - '--path.sysfs=/host/sys'
     pid: host
-    restart: always
     volumes:
       - '/proc:/host/proc:ro'
       - '/sys:/host/sys:ro'
@@ -200,6 +199,8 @@ services:
       - ./prometheus:/etc/prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
+    depends_on:
+      - victoria-metrics
     networks:
       - observability
     restart: always
@@ -223,6 +224,8 @@ services:
     volumes:
       - ./grafana:/var/lib/grafana
       - ./grafana/provisioning:/etc/grafana/provisioning/
+      - ./grafana/victoriametrics-datasource:/var/lib/grafana/plugins/grafana-datasource
+      - ./grafana/grafana.ini:/etc/grafana/grafana.ini
     ports:
       - 3000:3000
     depends_on:
@@ -231,5 +234,18 @@ services:
     networks:
       - observability
     restart: always
+    
+  victoria-metrics:
+    image: victoriametrics/victoria-metrics:heads-public-single-node-0-g152ca00fb
+    container_name: victoria-metrics
+    expose:
+      - 8428
+    volumes:
+      - ./victoria-metrics/data:/victoria-metrics-data
+    command: -retentionPeriod=2w
+    networks:
+      - observability
+    restart: always
+    
 
 

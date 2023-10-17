@@ -1,3 +1,49 @@
 ---
-- name: Network and time settings
-  import_tasks: network.yaml
+- name: Создать директории если они отсутствуют...
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: '0777'
+  with_items: "{{ dir_paths }}"
+
+- name: Добавляем конфиги...
+  ansible.builtin.copy:
+    src: "{{ item.file }}"
+    dest: "{{ item.location }}"
+    mode: '0777'
+  with_items: "{{ config_files }}"
+  register: files
+
+- name: Проверяем, установлен ли плагин VM для Grafana...
+  stat:
+    path: /opt/observability/grafana/victoriametrics-datasource
+  register: dir_check
+
+- name: Устанавливаем плагин VM для Grafana
+  block:
+    - name: Создаем папку, если её нет
+      file:
+        path: /opt/observability/grafana/victoriametrics-datasource
+        state: directory
+
+    - name: Скачиваем архив с плагином
+      get_url:
+        url: "https://github.com/VictoriaMetrics/grafana-datasource/releases/download/v0.3.0/victoriametrics-datasource-v0.3.0.tar.gz"
+        dest: /opt/observability/plugin.tar.gz
+
+    - name: Извлекаем архив с плагином
+      shell: tar -xf /opt/observability/plugin.tar.gz -C /opt/observability/grafana/victoriametrics-datasource --strip-components=1
+
+    - name: Удаляем архив с плагином
+      file:
+        path: /opt/observability/plugin.tar.gz
+        state: absent
+  when: not dir_check.stat.exists
+
+- name: Запускаем Docker Compose...
+  ansible.builtin.shell: |
+    docker compose up -d
+  args:
+    chdir: /opt/observability
+  
+  

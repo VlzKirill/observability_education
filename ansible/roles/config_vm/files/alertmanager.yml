@@ -1,0 +1,44 @@
+global:
+  resolve_timeout: 5m
+
+route:
+  group_by: ['alertname', 'severity']
+  group_wait: 1m
+  receiver: 'telegram_only'
+
+  routes:
+    - match:
+        severity: 'critical'
+      receiver: 'email_and_telegram'
+      repeat_interval: 1h
+    - match:
+        severity: 'warning'
+      receiver: 'email_and_telegram'
+      repeat_interval: 24h
+    - match:
+        severity: 'low'
+      receiver: 'telegram_only'
+      repeat_interval: 72h
+      
+receivers:
+  - name: 'telegram_only'
+    telegram_configs:
+      - chat_id: -1001928952984
+        parse_mode: 'HTML'
+        bot_token: '5805976749:AAEvztRdbyAzW55vwQpd7AhiziqKto6OMmk'
+
+  - name: 'email_and_telegram'
+    telegram_configs:
+      - chat_id: -1001928952984
+        parse_mode: 'HTML'
+        bot_token: '5805976749:AAEvztRdbyAzW55vwQpd7AhiziqKto6OMmk'
+    email_configs:
+      - to: 'criscoldiphone@gmail.com'
+        from: 'no-reply@ptus.ru'
+        smarthost: 'smtp:25'
+        auth_username: 'postman'
+        auth_identity: 'postman'
+        auth_password: 'postman'
+        require_tls: true
+        tls_config:
+          insecure_skip_verify: true
