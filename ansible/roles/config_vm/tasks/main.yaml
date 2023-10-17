@@ -42,7 +42,7 @@
 
 - name: Запускаем Docker Compose...
   ansible.builtin.shell: |
-    docker compose up -d
+    docker-compose up -d
   args:
     chdir: /opt/observability
   
