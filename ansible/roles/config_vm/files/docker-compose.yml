@@ -3,9 +3,6 @@ version: "3"
 networks:
   observability:
 
-## Предварительно создать папки: nginx/logs, wordpress/data, mysql/data, prometheus, grafana/provisioning, init
-## Файлы: nginx/nginx.conf promtail.conf prometheus/prometheus.yml alertmanager.yml init/exporter.sql
-
 services:
   smtp:
     image: catatnight/postfix:latest
